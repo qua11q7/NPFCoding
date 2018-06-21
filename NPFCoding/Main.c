@@ -1,14 +1,19 @@
 #include "CodingParameters.h"
 #include "HuffmanTableDataStructures.h"
 #include "FunctionDeclerations.h"
+#include "Utilities.h"
 
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 unsigned char* permutatedAlphabet;
 unsigned char* reversePermutatedAlphabet;
+char* originalFileName;
+char* payloadFileName;
+char* disInfoFileName;
 
 decodeTableMap* decodeTM;
 lengthTableMap* lengthTM;
@@ -16,9 +21,86 @@ disInfoTableMap* diTM;
 reverseDITableMap* rdiTM;
 npfTableMap* npfTM;
 
-int main() {
+int main(int argc, char **argv) {
 	srand(SEED);
 
+	unsigned char encode = HandleCommandArguments(argc, argv);
+	if (encode == -1)
+		return -1;
+
+	InitializeTableMaps();
+
+	if (encode) {
+		FILE *fptr = fopen(originalFileName, "rb");
+		clock_t start, stop;
+
+		start = clock();
+		fseek(fptr, 0, SEEK_END);
+		unsigned long long int fileLen = ftell(fptr);
+		fseek(fptr, 0, SEEK_SET);
+		unsigned char* data = (unsigned char*)malloc((fileLen + 1) * sizeof(char));
+		size_t bytesRead = fread(data, 1, fileLen, fptr);
+		fclose(fptr);
+		stop = clock();
+
+		double elapsed_secs = (double)(stop - start) / CLOCKS_PER_SEC;
+		printf("\r\nReading file took %f seconds.", elapsed_secs);
+
+		Encode(data, fileLen + 8);
+
+		free(data);
+		free(payloadFileName);
+		free(disInfoFileName);
+	}
+	else {
+		Decode();
+		free(originalFileName);
+	}
+
+	getchar();
+}
+
+int HandleCommandArguments(int argc, char** argv) {
+	// if argc is equal to 2, we are encoding the specified file
+	// if argc is equal to 3, we are decoding the payload with the disambiguation information
+	// later on, when you want to decode, you have to specify the coding parameters (d_size, recursion level, seed for permutation (if permutation wanted)) as well 
+
+	unsigned char encode = -1;
+	if (argc == 2) {
+		encode = 1;
+		originalFileName = argv[1];
+
+		// We want to add "_payload.bin" and "_disInfo.bin" to end of the encoded file names.
+		// The length of these strings are 12 charachter long.
+		char* fileNameWithoutExtension = remove_ext(originalFileName, '.', '/');
+		int payloadFileNameLength = strlen(fileNameWithoutExtension) + 12 + 1;
+
+		payloadFileName = (char*)malloc(payloadFileNameLength + 1);
+		snprintf(payloadFileName, payloadFileNameLength, "%s%s", fileNameWithoutExtension, "_payload.bin");
+		disInfoFileName = (char*)malloc(payloadFileNameLength + 1);
+		snprintf(disInfoFileName, payloadFileNameLength, "%s%s", fileNameWithoutExtension, "_disInfo.bin");
+
+		free(fileNameWithoutExtension);
+	}
+	else if (argc == 3) {
+		encode = 0;
+		payloadFileName = argv[1];
+		disInfoFileName = argv[2];
+
+		// We want to add "_decoded.bin" to the end of the decoded file name.
+		char* fileNameWithoutExtension = remove_ext(payloadFileName, '.', '/');
+		int decodedFileNameLength = strlen(fileNameWithoutExtension) + 12 + 1;
+
+		originalFileName = (char*)malloc(decodedFileNameLength + 1);
+		snprintf(payloadFileName, decodedFileNameLength, "%s%s", fileNameWithoutExtension, "_decoded.bin");
+
+		free(fileNameWithoutExtension);
+	}
+
+	return encode;
+}
+
+void InitializeTableMaps() {
 	permutatedAlphabet = PermutateAlphabet();
 	reversePermutatedAlphabet = ReversePermutatedAlphabet(permutatedAlphabet);
 	decodeTM = CreateDecodeTableMap();
@@ -26,27 +108,6 @@ int main() {
 	diTM = CreateDisInfoTableMap();
 	rdiTM = CreateReverseDisInfoTableMap();
 	npfTM = CreateNPFTableMap();
-
-	FILE *fptr = fopen("D:\\Calisma\\Projeler\\Yazilim\\Master\\Deneme\\x64\\Release\\randomSequence500.bin", "rb");
-	clock_t start, stop;
-
-	start = clock();
-	fseek(fptr, 0, SEEK_END);
-	unsigned long long int fileLen = ftell(fptr);
-	fseek(fptr, 0, SEEK_SET);
-	unsigned char* data = (unsigned char*)malloc((fileLen + 1) * sizeof(char));
-	size_t bytesRead = fread(data, 1, fileLen, fptr);
-	fclose(fptr);
-	stop = clock();
-
-	double elapsed_secs = (double)(stop - start) / CLOCKS_PER_SEC;
-	printf("Reading file took %f seconds.", elapsed_secs);
-
-	Encode(data, fileLen + 8);
-	Decode();
-
-	free(data);
-	getchar();
 }
 
 // TODO : Add recursive implementation of encoding
@@ -81,29 +142,29 @@ void Encode(unsigned char* data, long long int fileLength) {
 
 	stopEncode = clock();
 	double elapsed_secs_encode = (double)(stopEncode - startEncode) / CLOCKS_PER_SEC;
-	printf("Encoding took %f seconds.", elapsed_secs_encode);
+	printf("\r\nEncoding took %f seconds.", elapsed_secs_encode);
 
 	startFileWrite = clock();
 
-	FILE* fEncoded = fopen("D:\\Calisma\\Projeler\\Yazilim\\Master\\Deneme\\x64\\Release\\randomSequence500Encoded.bin", "wb");
+	FILE* fEncoded = fopen(payloadFileName, "wb");
 	fwrite(encodedData, 1, currentIndex - 1, fEncoded);
 	fclose(fEncoded);
 
-	FILE* fDisInfo = fopen("D:\\Calisma\\Projeler\\Yazilim\\Master\\Deneme\\x64\\Release\\randomSequence500DisInfo.bin", "wb");
+	FILE* fDisInfo = fopen(disInfoFileName, "wb");
 	fwrite(disInfoData, 1, disInfoIndex - 1, fDisInfo);
 	fclose(fDisInfo);
 
 	stopFileWrite = clock();
 	double elapsed_secs_write = (double)(stopFileWrite - startFileWrite) / CLOCKS_PER_SEC;
-	printf("Writing encoded files took %f seconds.", elapsed_secs_write);
+	printf("\r\nWriting encoded files took %f seconds.", elapsed_secs_write);
 
 	free(disInfoData);
 	free(encodedData);
 }
 
 void Decode() {
-	FILE *fDisInfo = fopen("D:\\Calisma\\Projeler\\Yazilim\\Master\\Deneme\\x64\\Release\\randomSequence500DisInfo.bin", "rb");
-	FILE *fPayload = fopen("D:\\Calisma\\Projeler\\Yazilim\\Master\\Deneme\\x64\\Release\\randomSequence500Encoded.bin", "rb");
+	FILE *fPayload = fopen(payloadFileName, "rb");
+	FILE *fDisInfo = fopen(disInfoFileName, "rb");
 	clock_t start, stop;
 
 	start = clock();
@@ -123,7 +184,7 @@ void Decode() {
 	stop = clock();
 
 	double elapsed_secs = (double)(stop - start) / CLOCKS_PER_SEC;
-	printf("\r\nReading payload and disInfo took %f seconds.", elapsed_secs);
+	printf("Reading payload and disInfo took %f seconds.", elapsed_secs);
 
 	clock_t decodeStart, decodeStop;
 	decodeStart = clock();
@@ -175,7 +236,7 @@ void Decode() {
 	elapsed_secs = (double)(decodeStop - decodeStart) / CLOCKS_PER_SEC;
 	printf("\r\nDecoding took %f seconds.", elapsed_secs);
 
-	FILE* fDecoded = fopen("D:\\Calisma\\Projeler\\Yazilim\\Master\\Deneme\\x64\\Release\\randomSequence500Decoded.bin", "wb");
+	FILE* fDecoded = fopen(originalFileName, "wb");
 	fwrite(decodedData, 1, decodedDataIndex - 1, fDecoded);
 	fclose(fDecoded);
 
