@@ -1,0 +1,13 @@
+Created files for testing with RandomSequencer.
+1 MiB file 	: ./RandomSequencer 1 2808
+10 MiB file	: ./RandomSequencer 10 2018
+100 MiB file	: ./RandomSequencer 100 2703
+1024 MiB file	: ./RandomSequencer 1024 1995
+
+Created seeds for testing with SeedGenerator.
+D4		: ./SeedGenerator 4 272
+D8		: ./SeedGenerator 8 272
+D12		: ./SeedGenerator 12 272
+D16		: ./SeedGenerator 16 272
+D20		: ./SeedGenerator 20 272
+

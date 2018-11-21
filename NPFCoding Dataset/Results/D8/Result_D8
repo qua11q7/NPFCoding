@@ -1,0 +1,66 @@
+D8 Benchmark
+
+1 MiB file:
+	Encoding:	0,008158 seconds
+	Speed:		122,5790 MiB/sec
+
+	Decoding:	0,008912 seconds
+	Speed:		112,2076 MiB/sec
+
+	Original Size:	1.048.576 bytes
+	Payload Size:	764.669 bytes
+	Payload Perc:	%72,924
+	DisInfo Size:	289.372 bytes
+	DisInfo Perc:	%27,596
+	Total Size:	1.054.041 bytes
+	Overhead Size:	5465 bytes
+	Overhead Perc:	%0,5184
+
+10 MiB file:
+	Encoding:	0,065328 seconds
+	Speed:		153,2848 MiB/sec
+
+	Decoding:	0,069207 seconds	
+	Speed:		144,4939 MiB/sec
+
+	Original Size:	10.485.760 bytes
+	Payload Size:	7.645.972 bytes
+	Payload Perc:	%72,917
+	DisInfo Size:	2.893.771 bytes
+	DisInfo Perc:	%27,597
+	Total Size:	10.539.743 bytes
+	Overhead Size:	53983 bytes
+	Overhead Perc:	%0,5121
+
+100 MiB file:
+	Encoding:	0,558225 seconds
+	Speed:		179,1392 MiB/sec
+
+	Decoding:	0,605525 seconds
+	Speed:		165,1459 MiB/sec
+
+	Original Size:	104.857.600 bytes
+	Payload Size:	76.465.784 bytes
+	Payload Perc:	%72,923
+	DisInfo Size:	28.929.531 bytes
+	DisInfo Perc:	%27.589
+	Total Size:	105.395.315 bytes
+	Overhead Size:	537.715 bytes
+	Overhead Perc:	%0,5101
+
+1024 Mib file:
+	Encoding:	5,773329 seconds
+	Speed:		177,3673 MiB/sec
+
+	Decoding:	6,348934 seconds
+	Speed:		161,2869 MiB/sec
+
+	Original Size:	1.073.741.824 bytes
+	Payload Size:	783.026.076 bytes
+	Payload Perc:	%72,924
+	DisInfo Size:	296.219.259 bytes
+	DisInfo Perc:	%27,587
+	Total Size:	1.079.245.335 bytes
+	Overhead Size:	5.503.511 bytes
+	Overhead Perc:	%0,5099
+	
