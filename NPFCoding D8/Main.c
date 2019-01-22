@@ -427,33 +427,21 @@ void CreateNPFTableMap() {
 			if (value < (SYMBOL_SIZE - 2))
 				value += 2;
 			else {
+				// Since D_SIZE is 8, we will always output!
 				totalLength = initialLength + D_SIZE;
-				row.canOutput = totalLength >= 8 ? 1 : 0;
+				row.canOutput = 1;
 
 				if (value == (SYMBOL_SIZE - 2)) {	            // Consider this row as always D_SIZE many zeroes : 00000000
-                    if(row.canOutput) {
-                        // If we can output, it means we have more than 8 bits stored.
-                        // we have to shift output to have 8 bits, put remaining bits to remaining variable.
-                        row.output = initialValue << (8 - initialLength);
-                        remainingLength = D_SIZE - (8 - initialLength);
-                        remaining = 0;                           // Remaining will always be zero since this row always means D_SIZE many zeroes.
-                    } else {
-                        // Since we don't have enough bits to output, we just need to shift D_SIZE many times to store this rows value.
-                        row.output = initialValue << D_SIZE;
-                        remainingLength = D_SIZE + initialLength;
-                        remaining = row.output;
-                    }
+                    // If we can output, it means we have more than or equal to 8 bits stored.
+                    // we have to shift output to have 8 bits, put remaining bits to remaining variable.
+                    row.output = initialValue << (8 - initialLength);
+                    remainingLength = initialLength;
+                    remaining = 0;                           // Remaining will always be zero since this row always means D_SIZE many zeroes.
 				}
 				else if (value == (SYMBOL_SIZE - 1)) {			// Consider this row as always (D_SIZE - 1) many zeroes + 1 : 00000001
-                    if(row.canOutput) {
-                        remainingLength = D_SIZE - (8 - initialLength);
-                        row.output = (initialValue << (8 - initialLength)) | (1 >> (remainingLength));
-                        remaining = remainingLength == 0 ? 0 : 1;
-                    } else {
-                        row.output = (initialValue << (8 - initialLength)) | 1;
-                        remainingLength = D_SIZE + initialLength;
-                        remaining = row.output;
-                    }
+                    remainingLength = initialLength;
+                    row.output = (initialValue << (8 - initialLength)) | (1 >> (remainingLength));
+                    remaining = remainingLength == 0 ? 0 : 1;
 				}
 				row.nextTableId = ReverseMBR(&remaining, &remainingLength);
                 row.mbrLength = D_SIZE;
@@ -553,13 +541,13 @@ void CreateDisInfoTableMap() {
 			row.canOutput = totalLength >= 8 ? 1 : 0;
 
 			if (row.canOutput) {
-				remainingLength = length - (8 - initialLength);
-				unsigned char shiftedInitialValue = initialValue << (8 - initialLength);
-				unsigned char shiftedValue = value >> remainingLength;
-				row.output = shiftedInitialValue | shiftedValue;
-
-				unsigned char bitMask = (1 << remainingLength) - 1;
-				remaining = value & bitMask;
+                remaining = value;
+				remainingLength = totalLength - 8;
+				row.output = initialValue << (8 - initialLength);
+				if(remainingLength == 0) {
+                    row.output |= value;
+                    remaining = 0;
+				}
 			}
 			else
 			{
@@ -646,13 +634,13 @@ void CreateLengthTableMap() {
 void CreateReverseDisInfoTableMap() {
     memset(&rdiTM, 0, sizeof(reverseDITableMap));
 
-	// There should be only 7 table. Remaining value can only be zero, only its length can change. If there is a 1 bit in the remaining,
+	// Remaining value can only be zero, only its length can change. If there is a 1 bit in the remaining,
 	// we can already calculate the corresponding symbol length. So the remaining value cannot contain any 1 bits.
-	for (unsigned char t = 0; t < D_SIZE; t++) {
+	// Actually, t can be at most 6, when t is 7, it means there are 7 zeroes. We know that 7 zeroes mean codeword length of 8 and cannot be a remaining data.
+	for (unsigned char t = 0; t < D_SIZE - 1; t++) {
 		reverseDITable table;
 		memset(&table, 0, sizeof(reverseDITable));
 
-		unsigned char initialValue = 0;
 		unsigned char initialLength = t;
 
 		for (unsigned char r = 0; r <= 255; r++) {
@@ -661,7 +649,7 @@ void CreateReverseDisInfoTableMap() {
 
 			row.outputCount = 0;
 			unsigned char totalLength = initialLength + 8;
-			unsigned short currentValue = (initialValue << 8) | r;
+			unsigned short currentValue = r;
 
 			// left align the sequence.
 			unsigned short shiftedValue = currentValue << (16 - totalLength);
